@@ -87,40 +87,27 @@ func collect(version string) (map[string]map[string]any, map[string]any) {
 }
 
 func shuffle(recipes map[string]map[string]any) {
-	groups := map[string][]map[string]any{}
-	total := 0
+	var docs []map[string]any
 	for _, doc := range recipes {
-		var kind string
-		switch result := doc["result"].(type) {
-		case string:
-			kind = "string"
-		case map[string]any:
-			_, hasID := result["id"]
-			_, hasItem := result["item"]
-			if !hasID && !hasItem {
-				continue
-			}
-			kind = "object"
-		default:
+		result, ok := doc["result"]
+		if !ok {
 			continue
 		}
-		groups[kind] = append(groups[kind], doc)
-		total++
-	}
-	done := 0
-	for _, docs := range groups {
-		results := make([]any, len(docs))
-		for i, doc := range docs {
-			results[i] = doc["result"]
+		if m, ok := result.(map[string]any); ok && len(m) == 0 {
+			continue
 		}
-		rand.Shuffle(len(results), func(i, j int) { results[i], results[j] = results[j], results[i] })
-		for i, doc := range docs {
-			doc["result"] = results[i]
-			done++
-			bar("shuffle", done, total)
-		}
+		docs = append(docs, doc)
 	}
-	if total > 0 {
+	results := make([]any, len(docs))
+	for i, doc := range docs {
+		results[i] = doc["result"]
+	}
+	rand.Shuffle(len(results), func(i, j int) { results[i], results[j] = results[j], results[i] })
+	for i, doc := range docs {
+		doc["result"] = results[i]
+		bar("shuffle", i+1, len(docs))
+	}
+	if len(docs) > 0 {
 		fmt.Println()
 	}
 }
