@@ -90,11 +90,20 @@ func shuffle(recipes map[string]map[string]any) {
 	groups := map[string][]map[string]any{}
 	total := 0
 	for _, doc := range recipes {
-		result, ok := doc["result"]
-		if !ok {
+		var kind string
+		switch result := doc["result"].(type) {
+		case string:
+			kind = "string"
+		case map[string]any:
+			_, hasID := result["id"]
+			_, hasItem := result["item"]
+			if !hasID && !hasItem {
+				continue
+			}
+			kind = "object"
+		default:
 			continue
 		}
-		kind := fmt.Sprintf("%T", result)
 		groups[kind] = append(groups[kind], doc)
 		total++
 	}
